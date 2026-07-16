@@ -181,7 +181,7 @@ private fun MediaRow(item: MediaEntity, onPreview: () -> Unit, onRetry: () -> Un
 }
 
 private fun statusText(status: String) = when (status) {
-    "pending" -> "等待网络上传"; "uploading" -> "正在后台上传"; "uploaded" -> "已上传"; "failed" -> "上传失败"; else -> status
+    "pending" -> "等待上传（将自动重试）"; "uploading" -> "正在后台上传"; "uploaded" -> "已上传"; "failed" -> "上传失败"; else -> status
 }
 
 @Composable

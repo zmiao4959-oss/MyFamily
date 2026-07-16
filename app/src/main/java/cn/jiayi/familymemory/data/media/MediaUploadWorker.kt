@@ -25,8 +25,14 @@ class MediaUploadWorker(context: Context, parameters: WorkerParameters) : Corout
             .fold(
                 onSuccess = { Result.success() },
                 onFailure = { error ->
-                    repository.markFailed(mediaId, error.message ?: error.javaClass.simpleName)
-                    if (runAttemptCount >= 5) Result.failure() else Result.retry()
+                    val message = error.message ?: error.javaClass.simpleName
+                    if (runAttemptCount >= 5) {
+                        repository.markFailed(mediaId, message)
+                        Result.failure()
+                    } else {
+                        repository.markWaiting(mediaId, message)
+                        Result.retry()
+                    }
                 },
             )
     }

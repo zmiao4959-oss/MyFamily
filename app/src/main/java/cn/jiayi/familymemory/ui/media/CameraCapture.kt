@@ -43,16 +43,30 @@ fun CameraCapture(
 
     DisposableEffect(lifecycleOwner, previewView) {
         val future = ProcessCameraProvider.getInstance(context)
+        var provider: ProcessCameraProvider? = null
+        var boundPreview: Preview? = null
+        var boundCapture: ImageCapture? = null
+        var disposed = false
         future.addListener({
             runCatching {
-                val provider = future.get()
+                if (disposed) return@runCatching
+                val cameraProvider = future.get()
                 val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
-                imageCapture = ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build()
-                provider.unbindAll()
-                provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture)
+                val capture = ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build()
+                cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
+                provider = cameraProvider
+                boundPreview = preview
+                boundCapture = capture
+                imageCapture = capture
             }.onFailure { onError(it.message ?: "相机启动失败") }
         }, ContextCompat.getMainExecutor(context))
-        onDispose { runCatching { future.get().unbindAll() } }
+        onDispose {
+            disposed = true
+            imageCapture = null
+            boundPreview?.setSurfaceProvider(null)
+            val useCases = listOfNotNull(boundPreview, boundCapture).toTypedArray()
+            if (useCases.isNotEmpty()) runCatching { provider?.unbind(*useCases) }
+        }
     }
 
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {

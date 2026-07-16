@@ -11,9 +11,7 @@ import android.provider.OpenableColumns
 import android.util.Size
 import androidx.exifinterface.media.ExifInterface
 import androidx.work.BackoffPolicy
-import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -125,6 +123,11 @@ class MediaRepository @Inject constructor(
         dao.updateMediaUpload(item.id, "failed", item.uploadProgress, item.uploadId, item.uploadedBytes, message.take(240))
     }
 
+    suspend fun markWaiting(mediaId: String, message: String) {
+        val item = dao.mediaById(mediaId) ?: return
+        dao.updateMediaUpload(item.id, "pending", item.uploadProgress, item.uploadId, item.uploadedBytes, message.take(240))
+    }
+
     private suspend fun registerFile(
         file: File,
         originalName: String,
@@ -165,7 +168,6 @@ class MediaRepository @Inject constructor(
     private fun enqueue(mediaId: String) {
         val request = OneTimeWorkRequestBuilder<MediaUploadWorker>()
             .setInputData(workDataOf(MediaUploadWorker.MEDIA_ID to mediaId))
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.SECONDS)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork("media-upload-$mediaId", ExistingWorkPolicy.REPLACE, request)
