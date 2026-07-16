@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,6 +42,7 @@ fun SearchScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var personId by rememberSaveable { mutableStateOf<String?>(null) }
     var mediaType by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { viewModel.refreshStatus() }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedButton(onClick = onBack) { Text("返回") }
         Text("查找家族资料", style = MaterialTheme.typography.headlineMedium)

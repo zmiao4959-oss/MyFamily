@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -29,6 +31,7 @@ data class SearchUiState(
 class SearchViewModel @Inject constructor(private val repository: SearchRepository) : ViewModel() {
     private val mutableState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = mutableState.asStateFlow()
+    private var statusPollingJob: Job? = null
 
     init { refreshStatus() }
 
@@ -59,9 +62,21 @@ class SearchViewModel @Inject constructor(private val repository: SearchReposito
             runCatching { repository.reindex() }
                 .onSuccess { value ->
                     mutableState.update { it.copy(busy = false, message = "已加入 ${value.queued} 项索引任务，电脑会在后台处理", isError = false) }
-                    refreshStatus()
+                    pollStatusUntilSettled()
                 }
                 .onFailure { error -> mutableState.update { it.copy(busy = false, message = SearchRepository.userMessage(error), isError = true) } }
+        }
+    }
+
+    private fun pollStatusUntilSettled() {
+        statusPollingJob?.cancel()
+        statusPollingJob = viewModelScope.launch {
+            repeat(60) {
+                val value = runCatching { repository.status() }.getOrElse { return@launch }
+                mutableState.update { it.copy(status = value) }
+                if (value.pending == 0) return@launch
+                delay(2_000)
+            }
         }
     }
 }
