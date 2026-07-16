@@ -5,10 +5,29 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CoreDao {
+    @Query("SELECT * FROM media_assets ORDER BY createdAt DESC")
+    fun observeMedia(): Flow<List<MediaEntity>>
+
+    @Query("SELECT * FROM media_assets WHERE id = :id")
+    suspend fun mediaById(id: String): MediaEntity?
+
+    @Upsert
+    suspend fun upsertMedia(media: MediaEntity)
+
+    @Query("UPDATE media_assets SET uploadStatus = :status, uploadProgress = :progress, uploadId = :uploadId, uploadedBytes = :uploadedBytes, lastError = :error WHERE id = :id")
+    suspend fun updateMediaUpload(id: String, status: String, progress: Int, uploadId: String?, uploadedBytes: Long, error: String?)
+
+    @Query("UPDATE media_assets SET serverId = :serverId, uploadStatus = 'uploaded', uploadProgress = 100, lastError = NULL WHERE id = :id")
+    suspend fun markMediaUploaded(id: String, serverId: String)
+
+    @Query("DELETE FROM media_assets WHERE id = :id")
+    suspend fun deleteMedia(id: String)
+
     @Query("SELECT * FROM persons WHERE deletedAt IS NULL ORDER BY isSelf DESC, name")
     fun observePersons(): Flow<List<PersonEntity>>
 
@@ -21,31 +40,31 @@ interface CoreDao {
     @Query("SELECT * FROM tags WHERE deletedAt IS NULL ORDER BY name")
     fun observeTags(): Flow<List<TagEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertPerson(person: PersonEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertPersons(persons: List<PersonEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertRelationship(relationship: RelationshipEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertRelationships(relationships: List<RelationshipEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertRecord(record: RecordEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertRecords(records: List<RecordEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertTag(tag: TagEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertTags(tags: List<TagEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertRecordTags(items: List<RecordTagEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -71,6 +90,9 @@ interface CoreDao {
 
     @Query("DELETE FROM record_tags")
     suspend fun clearRecordTags()
+
+    @Query("DELETE FROM media_assets")
+    suspend fun clearMedia()
 
     @Query("DELETE FROM pending_sync")
     suspend fun clearPending()
@@ -119,11 +141,6 @@ interface CoreDao {
         tags: List<TagEntity>,
         recordTags: List<RecordTagEntity>,
     ) {
-        clearRecordTags()
-        clearRelationships()
-        clearRecords()
-        clearTags()
-        clearPersons()
         upsertPersons(persons)
         upsertRelationships(relationships)
         upsertRecords(records)
@@ -135,6 +152,7 @@ interface CoreDao {
     suspend fun clearAllCoreData() {
         clearRecordTags()
         clearPending()
+        clearMedia()
         clearRelationships()
         clearRecords()
         clearTags()

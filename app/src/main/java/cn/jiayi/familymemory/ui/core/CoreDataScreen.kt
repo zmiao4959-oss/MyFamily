@@ -27,7 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoreDataScreen(viewModel: CoreDataViewModel, onBack: () -> Unit) {
+fun CoreDataScreen(viewModel: CoreDataViewModel, onBack: () -> Unit, onOpenMedia: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(topBar = { TopAppBar(title = { Text("第二阶段资料测试") }, navigationIcon = { OutlinedButton(onClick = onBack) { Text("返回") } }) }) { padding ->
         Column(
@@ -43,6 +43,7 @@ fun CoreDataScreen(viewModel: CoreDataViewModel, onBack: () -> Unit) {
                 Button(onClick = viewModel::sync, enabled = !state.busy, modifier = Modifier.weight(1f)) { Text("立即同步") }
                 OutlinedButton(onClick = viewModel::loadDemo, enabled = !state.busy, modifier = Modifier.weight(1f)) { Text("载入演示家族") }
             }
+            Button(onClick = onOpenMedia, modifier = Modifier.fillMaxWidth()) { Text("进入第三阶段媒体测试") }
 
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

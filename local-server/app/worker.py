@@ -10,7 +10,7 @@ logger = logging.getLogger("family-memory-worker")
 
 
 def main() -> None:
-    logger.info("Database-backed worker started; phase 1 has no processing jobs yet")
+    logger.info("Database-backed worker started; media processing dependencies are ready")
     while True:
         try:
             with SessionLocal() as session:

@@ -195,3 +195,43 @@ class SyncPushResult(CoreModel):
 
 class SyncPushResponse(CoreModel):
     results: list[SyncPushResult]
+
+
+class MediaInitRequest(CoreModel):
+    record_id: str
+    client_uuid: str
+    original_filename: str = Field(min_length=1, max_length=255)
+    mime_type: str = Field(min_length=3, max_length=100)
+    size_bytes: int = Field(gt=0)
+    sha256: str | None = Field(default=None, pattern=r"^[0-9a-fA-F]{64}$")
+
+
+class MediaInitResponse(CoreModel):
+    upload_id: str
+    chunk_size: int
+    bytes_received: int
+
+
+class MediaChunkResponse(CoreModel):
+    upload_id: str
+    bytes_received: int
+    complete: bool
+
+
+class MediaRead(CoreModel):
+    id: str
+    client_uuid: str
+    record_id: str
+    media_type: str
+    original_filename: str
+    mime_type: str
+    size_bytes: int
+    sha256: str
+    duration_ms: int | None
+    width: int | None
+    height: int | None
+    captured_at: datetime | None
+    metadata_json: dict
+    duplicate_of_id: str | None
+    has_thumbnail: bool = False
+    created_at: datetime

@@ -119,3 +119,33 @@ data class SyncStateEntity(
     val latestServerVersion: Int = 0,
     val lastSyncedAt: Long? = null,
 )
+
+@Entity(
+    tableName = "media_assets",
+    foreignKeys = [
+        ForeignKey(entity = RecordEntity::class, parentColumns = ["id"], childColumns = ["recordId"], onDelete = ForeignKey.CASCADE),
+    ],
+    indices = [Index("recordId"), Index(value = ["clientUuid"], unique = true), Index("uploadStatus")],
+)
+data class MediaEntity(
+    @androidx.room.PrimaryKey val id: String,
+    val clientUuid: String,
+    val recordId: String,
+    val serverId: String? = null,
+    val mediaType: String,
+    val mimeType: String,
+    val originalFilename: String,
+    val localPath: String,
+    val localThumbnailPath: String? = null,
+    val sizeBytes: Long,
+    val sha256: String,
+    val durationMs: Long? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val uploadStatus: String = "pending",
+    val uploadProgress: Int = 0,
+    val uploadId: String? = null,
+    val uploadedBytes: Long = 0,
+    val lastError: String? = null,
+    val createdAt: Long,
+)

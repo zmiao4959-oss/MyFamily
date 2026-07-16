@@ -15,6 +15,7 @@ from app.security import issue_access_token, require_access_token, verify_pairin
 from app.models import PairingToken
 from app.core import router as core_router
 from app.demo import router as demo_router
+from app.media import router as media_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("family-memory")
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
     )
     application.include_router(core_router)
     application.include_router(demo_router)
+    application.include_router(media_router)
 
     @application.get("/health", response_model=HealthResponse)
     def health(

@@ -58,4 +58,31 @@ class CoreDaoTest {
         assertEquals(2, dao.observePersons().first().size)
         assertEquals(listOf(relationship), dao.observeRelationships().first())
     }
+
+    @Test
+    fun mediaUploadQueueKeepsProgressAndOriginalPath() = runBlocking {
+        val record = RecordEntity(id = "record-1", clientUuid = "record-1", title = "录音", updatedAt = 1)
+        dao.upsertRecord(record)
+        val media = MediaEntity(
+            id = "media-1",
+            clientUuid = "media-1",
+            recordId = record.id,
+            mediaType = "audio",
+            mimeType = "audio/mp4",
+            originalFilename = "recording.m4a",
+            localPath = "/private/original/recording.m4a",
+            sizeBytes = 100,
+            sha256 = "a".repeat(64),
+            createdAt = 1,
+        )
+        dao.upsertMedia(media)
+
+        dao.updateMediaUpload(media.id, "uploading", 50, "upload-1", 50, null)
+
+        val queued = dao.observeMedia().first().single()
+        assertEquals("/private/original/recording.m4a", queued.localPath)
+        assertEquals("uploading", queued.uploadStatus)
+        assertEquals(50, queued.uploadProgress)
+        assertEquals(50, queued.uploadedBytes)
+    }
 }

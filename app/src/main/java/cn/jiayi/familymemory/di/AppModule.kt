@@ -9,6 +9,8 @@ import cn.jiayi.familymemory.data.connection.DataStoreConnectionPreferences
 import cn.jiayi.familymemory.security.KeystoreAccessTokenStore
 import cn.jiayi.familymemory.data.local.CoreDao
 import cn.jiayi.familymemory.data.local.FamilyDatabase
+import cn.jiayi.familymemory.data.media.AndroidSystemAsrProvider
+import cn.jiayi.familymemory.data.media.AsrProvider
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -28,6 +30,9 @@ abstract class AppBindings {
 
     @Binds
     abstract fun bindTokenStore(implementation: KeystoreAccessTokenStore): AccessTokenStore
+
+    @Binds
+    abstract fun bindAsrProvider(implementation: AndroidSystemAsrProvider): AsrProvider
 }
 
 @Module
@@ -50,7 +55,9 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): FamilyDatabase =
-        Room.databaseBuilder(context, FamilyDatabase::class.java, "family-memory.db").build()
+        Room.databaseBuilder(context, FamilyDatabase::class.java, "family-memory.db")
+            .addMigrations(FamilyDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideCoreDao(database: FamilyDatabase): CoreDao = database.coreDao()

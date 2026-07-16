@@ -12,7 +12,7 @@ from app.main import create_app
 
 
 @pytest.fixture
-def client() -> Generator[TestClient, None, None]:
+def client(tmp_path) -> Generator[TestClient, None, None]:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -24,6 +24,9 @@ def client() -> Generator[TestClient, None, None]:
         app_secret="test-secret-with-enough-length",
         pairing_token="test-pairing-token",
         database_url="sqlite://",
+        media_root=tmp_path / "media",
+        backup_root=tmp_path / "backups",
+        max_upload_size_mb=2,
     )
 
     def override_db() -> Generator[Session, None, None]:
