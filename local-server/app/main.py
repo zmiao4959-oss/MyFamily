@@ -18,8 +18,12 @@ from app.demo import router as demo_router
 from app.media import router as media_router
 from app.ai import router as ai_router
 from app.search import router as search_router
+from app.backup import router as backup_router
+from app.pairing import router as pairing_router
+from app.log_safety import install_log_redaction
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+install_log_redaction()
 logger = logging.getLogger("family-memory")
 
 
@@ -41,6 +45,8 @@ def create_app() -> FastAPI:
     application.include_router(media_router)
     application.include_router(ai_router)
     application.include_router(search_router)
+    application.include_router(backup_router)
+    application.include_router(pairing_router)
 
     @application.get("/health", response_model=HealthResponse)
     def health(
@@ -64,7 +70,7 @@ def create_app() -> FastAPI:
         db: Session = Depends(get_db),
         settings: Settings = Depends(get_settings),
     ) -> PairResponse:
-        if not verify_pairing_token(request.pairing_token, settings):
+        if not verify_pairing_token(request.pairing_token, settings, db):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid pairing token")
         access_token = issue_access_token(db, request.device_name, settings)
         return PairResponse(access_token=access_token, server_version=settings.app_version)

@@ -264,3 +264,25 @@ class PairingToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class BackupRecord(Base):
+    __tablename__ = "backup_records"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    storage_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    encrypted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    persons_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    media_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="ready")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+    key: Mapped[str] = mapped_column(String(120), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)

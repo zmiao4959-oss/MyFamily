@@ -14,4 +14,9 @@ AI Artifact 默认是 `suggestion`。用户确认记录整理结果后，摘要�
 
 第六阶段新增 `embeddings`：保存对象类型、对象 ID、模态、模型、Endpoint ID、内容哈希、来源更新时间、pgvector 向量、状态和脱敏错误。唯一约束防止同一内容来源和模型产生重复活动索引。内容变化后向量置为待生成，由 `processing_jobs` 的 `embedding_generate` 任务重新计算。
 
-PostgreSQL 迁移会执行 `CREATE EXTENSION IF NOT EXISTS vector`；向量列使用 pgvector，第一版个人数据量较小，不创建 HNSW 索引。Alembic 当前版本为 `0005`。
+第七阶段新增：
+
+- `backup_records`：仅保存备份文件目录、SHA-256、大小、业务数量和状态，不保存备份密码。
+- `app_settings`：保存轮换后管理员配对令牌的 HMAC 哈希等服务端安全设置，不保存明文令牌。
+
+PostgreSQL 迁移会执行 `CREATE EXTENSION IF NOT EXISTS vector`；向量列使用 pgvector，第一版个人数据量较小，不创建 HNSW 索引。Alembic 当前版本为 `0006`。

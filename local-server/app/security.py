@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.database import get_db
-from app.models import PairingToken
+from app.models import AppSetting, PairingToken
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -21,7 +21,13 @@ def token_hash(token: str, secret: str) -> str:
     return hmac.new(secret.encode(), token.encode(), hashlib.sha256).hexdigest()
 
 
-def verify_pairing_token(provided: str, settings: Settings) -> bool:
+ADMIN_PAIRING_HASH = "admin_pairing_token_hash"
+
+
+def verify_pairing_token(provided: str, settings: Settings, db: Session | None = None) -> bool:
+    override = db.get(AppSetting, ADMIN_PAIRING_HASH) if db is not None else None
+    if override is not None:
+        return secrets.compare_digest(token_hash(provided, settings.app_secret), override.value)
     return secrets.compare_digest(provided, settings.effective_pairing_token())
 
 

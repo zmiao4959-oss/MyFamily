@@ -78,6 +78,7 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.exifinterface)
+    implementation(libs.androidx.biometric)
 
     kapt(libs.hilt.compiler)
     kapt(libs.androidx.room.compiler)

@@ -1,6 +1,6 @@
 # 家忆架构概览
 
-当前完成第六阶段多模态搜索闭环。
+当前完成第七阶段安全与备份闭环。
 
 - Android：Kotlin、Jetpack Compose、Material 3、MVVM、Repository、Hilt、Room、DataStore、WorkManager、CameraX、Media3、Android Keystore。
 - 本地服务：FastAPI、SQLAlchemy 2、Alembic、PostgreSQL 17、pgvector。
@@ -9,7 +9,11 @@
 
 ## 安全边界
 
-管理员配对令牌只用于首次配对。服务端签发随机访问令牌，只保存 HMAC-SHA256 哈希；Android 端使用 Android Keystore 的 AES-GCM 密钥加密保存访问令牌。Debug 构建允许可信局域网 HTTP，Release 构建默认禁止明文流量。
+管理员配对令牌只用于首次配对。服务端签发随机访问令牌，只保存 HMAC-SHA256 哈希；Android 端使用 Android Keystore 的 AES-GCM 密钥加密保存访问令牌。管理员令牌轮换后只保存 HMAC 哈希，新明文只向当前已认证设备显示一次。App 锁通过 AndroidX BiometricPrompt 调用系统指纹、面容或设备凭据，不采集生物特征。Debug 构建允许可信局域网 HTTP，Release 构建默认禁止明文流量。
+
+## 备份与恢复
+
+服务端把业务表和媒体文件写入 AES-256 加密 ZIP 容器（扩展名 `.fmbackup`），保存数据库内容哈希、格式版本和数量清单。访问令牌、管理员令牌、API Key、上传临时文件和后台任务不进入备份。恢复先完成密码、版本、表集合、路径和内容哈希校验，并自动创建恢复前安全备份；随后在单个数据库事务内替换业务表，再写回已校验媒体文件。
 
 ## 媒体数据流
 
@@ -33,4 +37,4 @@ Android 只向本地服务提交记录或人物 ID。FastAPI 创建 `processing_
 
 ## 阶段边界
 
-第六阶段不实现视觉内容生成、人物识别、OCR 或图片事实提取；图片向量只用于相似性检索。工具 `create_record_draft` 和 `suggest_relationship` 仍只返回待确认建议，不直接写正式记录或人物关系。
+第七阶段仍不实现视觉内容生成、人物识别、OCR 或图片事实提取；图片向量只用于相似性检索。备份密码不保存，忘记密码后无法解密，恢复只面向同一备份格式版本。

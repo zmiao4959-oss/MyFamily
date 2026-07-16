@@ -46,7 +46,7 @@ private enum class MainTab(val label: String, val mark: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, searchViewModel: SearchViewModel, onOpenConnection: () -> Unit, onOpenMedia: () -> Unit) {
+fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, searchViewModel: SearchViewModel, onOpenConnection: () -> Unit, onOpenMedia: () -> Unit, onOpenSecurity: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val aiState by aiViewModel.uiState.collectAsStateWithLifecycle()
     var tabName by rememberSaveable { mutableStateOf(MainTab.HOME.name) }
@@ -146,7 +146,7 @@ fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, searchViewModel:
                     onSave = { viewModel.addRecord(it) { id -> selectedRecordId = id } }, onOpenMedia = onOpenMedia,
                 )
                 tab == MainTab.TIMELINE -> TimelineScreen(state.records, state.persons, state.tags, state.recordTags) { selectedRecordId = it }
-                else -> SettingsScreen(state, viewModel::sync, viewModel::loadDemo, onOpenConnection, onOpenMedia, { showAi = true }, { showSearch = true }, viewModel::clearLocal)
+                else -> SettingsScreen(state, viewModel::sync, viewModel::loadDemo, onOpenConnection, onOpenMedia, { showAi = true }, { showSearch = true }, onOpenSecurity, viewModel::clearLocal)
             }
         }
     }
@@ -230,6 +230,7 @@ private fun SettingsScreen(
     onMedia: () -> Unit,
     onAi: () -> Unit,
     onSearch: () -> Unit,
+    onSecurity: () -> Unit,
     onClearLocal: () -> Unit,
 ) {
     var confirmClear by remember { mutableStateOf(false) }
@@ -248,9 +249,10 @@ private fun SettingsScreen(
         OutlinedButton(onClick = onMedia, modifier = Modifier.fillMaxWidth()) { Text("媒体与录音管理") }
         OutlinedButton(onClick = onAi, modifier = Modifier.fillMaxWidth()) { Text("AI 设置与资料助手") }
         OutlinedButton(onClick = onSearch, modifier = Modifier.fillMaxWidth()) { Text("搜索与索引管理") }
+        OutlinedButton(onClick = onSecurity, modifier = Modifier.fillMaxWidth()) { Text("安全、备份与授权设备") }
         OutlinedButton(onClick = { confirmClear = true }, modifier = Modifier.fillMaxWidth()) { Text("清空手机本地资料") }
-        Text("数据备份、App 锁将在后续阶段启用。当前版本不含广告、行为分析或云端账号。", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("家忆 0.6.0 · 第六阶段多模态搜索", style = MaterialTheme.typography.labelLarge)
+        Text("备份使用 AES-256 加密；App 锁使用系统指纹、面容或锁屏密码。当前版本不含广告、行为分析或云端账号。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("家忆 0.7.0 · 第七阶段安全与备份", style = MaterialTheme.typography.labelLarge)
     }
     if (confirmClear) AlertDialog(
         onDismissRequest = { confirmClear = false }, title = { Text("确认清空手机资料？") },
