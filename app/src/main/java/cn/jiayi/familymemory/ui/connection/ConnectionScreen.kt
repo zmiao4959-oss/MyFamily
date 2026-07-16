@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun ConnectionScreen(
     viewModel: ConnectionViewModel,
+    onOpenData: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(
@@ -115,6 +116,12 @@ fun ConnectionScreen(
                     }
 
                     if (state.isPaired) {
+                        Button(
+                            onClick = onOpenData,
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                        ) {
+                            Text("进入第二阶段资料测试")
+                        }
                         OutlinedButton(
                             onClick = viewModel::clearPairing,
                             modifier = Modifier

@@ -35,3 +35,12 @@ def client() -> Generator[TestClient, None, None]:
     app.dependency_overrides[get_settings] = lambda: settings
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def auth_headers(client):
+    response = client.post(
+        "/pair",
+        json={"pairing_token": "test-pairing-token", "device_name": "pytest"},
+    )
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}

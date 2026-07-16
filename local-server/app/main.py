@@ -13,6 +13,8 @@ from app.database import get_db
 from app.schemas import HealthResponse, PairRequest, PairResponse, RevokeResponse
 from app.security import issue_access_token, require_access_token, verify_pairing_token
 from app.models import PairingToken
+from app.core import router as core_router
+from app.demo import router as demo_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("family-memory")
@@ -31,6 +33,8 @@ def create_app() -> FastAPI:
         version=get_settings().app_version,
         lifespan=lifespan,
     )
+    application.include_router(core_router)
+    application.include_router(demo_router)
 
     @application.get("/health", response_model=HealthResponse)
     def health(
