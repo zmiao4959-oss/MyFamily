@@ -17,6 +17,7 @@ from app.config import Settings, get_settings
 from app.database import get_db
 from app.models import AIArtifact, Claim, DEFAULT_FAMILY_ID, Person, ProcessingJob, Record, Tag, utc_now
 from app.security import require_access_token
+from app.embedding_service import queue_source
 
 router = APIRouter(prefix="/ai", dependencies=[Depends(require_access_token)])
 
@@ -166,7 +167,7 @@ def get_artifact(artifact_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/artifacts/{artifact_id}/confirm", response_model=AIArtifactRead)
-def confirm_artifact(artifact_id: str, payload: ConfirmArtifactRequest, db: Session = Depends(get_db)):
+def confirm_artifact(artifact_id: str, payload: ConfirmArtifactRequest, db: Session = Depends(get_db), settings: Settings = Depends(get_settings)):
     artifact = db.scalar(select(AIArtifact).where(AIArtifact.id == artifact_id, AIArtifact.family_id == DEFAULT_FAMILY_ID))
     if artifact is None:
         raise HTTPException(status_code=404, detail="AI artifact not found")
@@ -205,6 +206,9 @@ def confirm_artifact(artifact_id: str, payload: ConfirmArtifactRequest, db: Sess
             ))
     artifact.user_confirmed = True
     artifact.status = "confirmed"
+    if artifact.record_id:
+        record = _active_record(db, artifact.record_id)
+        queue_source(db, record, settings)
     db.commit()
     db.refresh(artifact)
     return artifact

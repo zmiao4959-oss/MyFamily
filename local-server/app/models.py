@@ -3,7 +3,8 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import JSON, BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, String, Table, Text, Column
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import JSON, BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, String, Table, Text, Column, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -219,6 +220,28 @@ class ProcessingJob(Base):
     result_artifact_id: Mapped[str | None] = mapped_column(ForeignKey("ai_artifacts.id"), nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     max_attempts: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+
+class Embedding(Base):
+    __tablename__ = "embeddings"
+    __table_args__ = (
+        UniqueConstraint("object_type", "object_id", "modality", "model", "endpoint_id", name="uq_embeddings_source_model"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False, default=DEFAULT_OWNER_ID)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, default=DEFAULT_FAMILY_ID, index=True)
+    object_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    object_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    modality: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    model: Mapped[str] = mapped_column(String(120), nullable=False)
+    endpoint_id: Mapped[str] = mapped_column(String(120), default="", nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    vector: Mapped[list[float] | None] = mapped_column(Vector().with_variant(JSON, "sqlite"), nullable=True)
+    status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False, index=True)
     last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)

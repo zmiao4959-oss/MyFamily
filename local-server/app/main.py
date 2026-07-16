@@ -17,6 +17,7 @@ from app.core import router as core_router
 from app.demo import router as demo_router
 from app.media import router as media_router
 from app.ai import router as ai_router
+from app.search import router as search_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("family-memory")
@@ -39,6 +40,7 @@ def create_app() -> FastAPI:
     application.include_router(demo_router)
     application.include_router(media_router)
     application.include_router(ai_router)
+    application.include_router(search_router)
 
     @application.get("/health", response_model=HealthResponse)
     def health(

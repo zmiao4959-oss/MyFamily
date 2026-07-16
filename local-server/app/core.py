@@ -9,6 +9,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.config import Settings, get_settings
+from app.embedding_service import queue_source
 from app.models import (
     DEFAULT_FAMILY_ID,
     DEFAULT_OWNER_ID,
@@ -135,8 +137,11 @@ def list_persons(search: str = "", db: Session = Depends(get_db)):
 
 
 @router.post("/persons", response_model=PersonRead, status_code=201)
-def create_person(payload: PersonCreate, db: Session = Depends(get_db)):
-    return person_read(create_entity(db, Person, payload.model_dump(exclude_none=True), "person"))
+def create_person(payload: PersonCreate, db: Session = Depends(get_db), settings: Settings = Depends(get_settings)):
+    person = create_entity(db, Person, payload.model_dump(exclude_none=True), "person")
+    queue_source(db, person, settings)
+    commit(db)
+    return person_read(person)
 
 
 @router.get("/persons/{entity_id}", response_model=PersonRead)
@@ -145,8 +150,11 @@ def get_person(entity_id: str, db: Session = Depends(get_db)):
 
 
 @router.patch("/persons/{entity_id}", response_model=PersonRead)
-def update_person(entity_id: str, payload: PersonUpdate, db: Session = Depends(get_db)):
-    return person_read(update_entity(db, get_active(db, Person, entity_id), payload.model_dump(exclude_unset=True, exclude_none=True), "person"))
+def update_person(entity_id: str, payload: PersonUpdate, db: Session = Depends(get_db), settings: Settings = Depends(get_settings)):
+    person = update_entity(db, get_active(db, Person, entity_id), payload.model_dump(exclude_unset=True, exclude_none=True), "person")
+    queue_source(db, person, settings)
+    commit(db)
+    return person_read(person)
 
 
 @router.delete("/persons/{entity_id}", status_code=204)
@@ -217,10 +225,12 @@ def list_records(person_id: str | None = None, db: Session = Depends(get_db)):
 
 
 @router.post("/records", response_model=RecordRead, status_code=201)
-def create_record(payload: RecordCreate, db: Session = Depends(get_db)):
+def create_record(payload: RecordCreate, db: Session = Depends(get_db), settings: Settings = Depends(get_settings)):
     data, tags = record_data(db, payload, partial=False)
     record = create_entity(db, Record, data, "record")
     record.tags = tags
+    commit(db)
+    queue_source(db, record, settings)
     commit(db)
     db.refresh(record)
     return record_read(record)
@@ -232,12 +242,14 @@ def get_record(entity_id: str, db: Session = Depends(get_db)):
 
 
 @router.patch("/records/{entity_id}", response_model=RecordRead)
-def update_record(entity_id: str, payload: RecordUpdate, db: Session = Depends(get_db)):
+def update_record(entity_id: str, payload: RecordUpdate, db: Session = Depends(get_db), settings: Settings = Depends(get_settings)):
     data, tags = record_data(db, payload, partial=True)
     record = update_entity(db, get_active(db, Record, entity_id), data, "record")
     if "tag_ids" in payload.model_fields_set:
         record.tags = tags
         commit(db)
+    queue_source(db, record, settings)
+    commit(db)
     return record_read(record)
 
 
@@ -262,7 +274,7 @@ ENTITY_CONFIG = {
 
 
 @router.post("/sync/push", response_model=SyncPushResponse)
-def sync_push(payload: SyncPushRequest, db: Session = Depends(get_db)):
+def sync_push(payload: SyncPushRequest, db: Session = Depends(get_db), settings: Settings = Depends(get_settings)):
     results: list[SyncPushResult] = []
     for change in payload.changes:
         model, schema = ENTITY_CONFIG[change.entity_type]
@@ -284,6 +296,9 @@ def sync_push(payload: SyncPushRequest, db: Session = Depends(get_db)):
                 entity = create_entity(db, model, data, change.entity_type)
             if model is Record:
                 entity.tags = tags
+                commit(db)
+            if model in {Record, Person}:
+                queue_source(db, entity, settings)
                 commit(db)
             results.append(SyncPushResult(client_uuid=change.client_uuid, entity_id=entity.id, status="synced"))
         except (HTTPException, ValueError):

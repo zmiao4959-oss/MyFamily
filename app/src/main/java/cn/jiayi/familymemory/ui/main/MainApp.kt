@@ -37,6 +37,8 @@ import cn.jiayi.familymemory.data.local.PersonEntity
 import cn.jiayi.familymemory.data.local.RecordEntity
 import cn.jiayi.familymemory.ui.ai.AiScreen
 import cn.jiayi.familymemory.ui.ai.AiViewModel
+import cn.jiayi.familymemory.ui.search.SearchScreen
+import cn.jiayi.familymemory.ui.search.SearchViewModel
 
 private enum class MainTab(val label: String, val mark: String) {
     HOME("首页", "家"), FAMILY("家族", "人"), RECORDS("记录", "记"), TIMELINE("时间线", "时"), SETTINGS("我的", "我")
@@ -44,7 +46,7 @@ private enum class MainTab(val label: String, val mark: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, onOpenConnection: () -> Unit, onOpenMedia: () -> Unit) {
+fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, searchViewModel: SearchViewModel, onOpenConnection: () -> Unit, onOpenMedia: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val aiState by aiViewModel.uiState.collectAsStateWithLifecycle()
     var tabName by rememberSaveable { mutableStateOf(MainTab.HOME.name) }
@@ -52,11 +54,13 @@ fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, onOpenConnection
     var selectedRecordId by rememberSaveable { mutableStateOf<String?>(null) }
     var showTree by rememberSaveable { mutableStateOf(false) }
     var showAi by rememberSaveable { mutableStateOf(false) }
+    var showSearch by rememberSaveable { mutableStateOf(false) }
     var aiRecordId by rememberSaveable { mutableStateOf<String?>(null) }
     var aiPersonId by rememberSaveable { mutableStateOf<String?>(null) }
     val tab = MainTab.valueOf(tabName)
     val title = when {
         showAi -> "AI 助手"
+        showSearch -> "搜索"
         selectedPersonId != null -> "人物详情"
         selectedRecordId != null -> "记录详情"
         showTree -> "家族树"
@@ -68,8 +72,8 @@ fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, onOpenConnection
             NavigationBar {
                 MainTab.entries.forEach { item ->
                     NavigationBarItem(
-                        selected = tab == item && selectedPersonId == null && selectedRecordId == null && !showTree && !showAi,
-                        onClick = { tabName = item.name; selectedPersonId = null; selectedRecordId = null; showTree = false; showAi = false },
+                        selected = tab == item && selectedPersonId == null && selectedRecordId == null && !showTree && !showAi && !showSearch,
+                        onClick = { tabName = item.name; selectedPersonId = null; selectedRecordId = null; showTree = false; showAi = false; showSearch = false },
                         icon = { Text(item.mark, fontWeight = FontWeight.Bold) }, label = { Text(item.label) },
                     )
                 }
@@ -84,6 +88,12 @@ fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, onOpenConnection
                 }
             }
             when {
+                showSearch -> SearchScreen(
+                    searchViewModel, state.persons,
+                    onBack = { showSearch = false },
+                    onOpenRecord = { id -> showSearch = false; selectedRecordId = id },
+                    onOpenPerson = { id -> showSearch = false; selectedPersonId = id },
+                )
                 showAi -> AiScreen(
                     aiViewModel, state.persons, state.records, aiRecordId, aiPersonId,
                     onBack = { showAi = false; aiRecordId = null; aiPersonId = null },
@@ -128,6 +138,7 @@ fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, onOpenConnection
                     onOpenPerson = { selectedPersonId = it },
                     onOpenRecord = { selectedRecordId = it },
                     onOpenAi = { showAi = true },
+                    onOpenSearch = { showSearch = true },
                 )
                 tab == MainTab.FAMILY -> PeopleListScreen(state.persons, { selectedPersonId = it }, { viewModel.addPerson(it) }, { showTree = true })
                 tab == MainTab.RECORDS -> RecordCreateScreen(
@@ -135,7 +146,7 @@ fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, onOpenConnection
                     onSave = { viewModel.addRecord(it) { id -> selectedRecordId = id } }, onOpenMedia = onOpenMedia,
                 )
                 tab == MainTab.TIMELINE -> TimelineScreen(state.records, state.persons, state.tags, state.recordTags) { selectedRecordId = it }
-                else -> SettingsScreen(state, viewModel::sync, viewModel::loadDemo, onOpenConnection, onOpenMedia, { showAi = true }, viewModel::clearLocal)
+                else -> SettingsScreen(state, viewModel::sync, viewModel::loadDemo, onOpenConnection, onOpenMedia, { showAi = true }, { showSearch = true }, viewModel::clearLocal)
             }
         }
     }
@@ -150,6 +161,7 @@ private fun HomeScreen(
     onOpenPerson: (String) -> Unit,
     onOpenRecord: (String) -> Unit,
     onOpenAi: () -> Unit,
+    onOpenSearch: () -> Unit,
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("把家人的故事，安静地留在自己手中。", style = MaterialTheme.typography.headlineSmall)
@@ -178,6 +190,12 @@ private fun HomeScreen(
             Column(Modifier.padding(14.dp)) {
                 Text("AI 助手", fontWeight = FontWeight.SemiBold)
                 Text("整理记录、生成小传和采访问题；所有结果都需要你确认。")
+            }
+        }
+        Card(Modifier.fillMaxWidth().clickable { onOpenSearch() }) {
+            Column(Modifier.padding(14.dp)) {
+                Text("搜索家族资料", fontWeight = FontWeight.SemiBold)
+                Text("按关键词、自然语言或图片内容查找人物与记录。")
             }
         }
     }
@@ -211,6 +229,7 @@ private fun SettingsScreen(
     onConnection: () -> Unit,
     onMedia: () -> Unit,
     onAi: () -> Unit,
+    onSearch: () -> Unit,
     onClearLocal: () -> Unit,
 ) {
     var confirmClear by remember { mutableStateOf(false) }
@@ -228,9 +247,10 @@ private fun SettingsScreen(
         OutlinedButton(onClick = onLoadDemo, enabled = state.hasAccessToken && !state.busy, modifier = Modifier.fillMaxWidth()) { Text("载入虚构演示家族") }
         OutlinedButton(onClick = onMedia, modifier = Modifier.fillMaxWidth()) { Text("媒体与录音管理") }
         OutlinedButton(onClick = onAi, modifier = Modifier.fillMaxWidth()) { Text("AI 设置与资料助手") }
+        OutlinedButton(onClick = onSearch, modifier = Modifier.fillMaxWidth()) { Text("搜索与索引管理") }
         OutlinedButton(onClick = { confirmClear = true }, modifier = Modifier.fillMaxWidth()) { Text("清空手机本地资料") }
         Text("数据备份、App 锁将在后续阶段启用。当前版本不含广告、行为分析或云端账号。", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("家忆 0.5.0 · 第五阶段 AI", style = MaterialTheme.typography.labelLarge)
+        Text("家忆 0.6.0 · 第六阶段多模态搜索", style = MaterialTheme.typography.labelLarge)
     }
     if (confirmClear) AlertDialog(
         onDismissRequest = { confirmClear = false }, title = { Text("确认清空手机资料？") },

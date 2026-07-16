@@ -25,6 +25,7 @@ from app.models import (
 )
 from app.schemas import MediaChunkResponse, MediaInitRequest, MediaInitResponse, MediaRead
 from app.security import require_access_token
+from app.embedding_service import queue_source
 
 router = APIRouter(prefix="/media", dependencies=[Depends(require_access_token)])
 CHUNK_SIZE = 1024 * 1024
@@ -298,6 +299,8 @@ def complete_upload(upload_id: str, db: Session = Depends(get_db), settings: Set
     session.asset_id = asset.id
     db.commit()
     db.refresh(asset)
+    queue_source(db, asset, settings)
+    db.commit()
     return media_read(asset)
 
 

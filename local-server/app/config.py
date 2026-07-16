@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     app_secret: str = Field(default="development-only-change-me", min_length=16)
     pairing_token: str = ""
     database_url: str = "postgresql+psycopg://family_memory:family_memory@localhost:5432/family_memory"
-    app_version: str = "0.5.0"
+    app_version: str = "0.6.0"
     media_root: Path = Path("/data/media")
     backup_root: Path = Path("/data/backups")
     max_upload_size_mb: int = Field(default=500, ge=1, le=4096)
@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     deepseek_main_model: str = "deepseek-v4-pro"
     feature_ai: bool = False
     ai_request_timeout_seconds: int = Field(default=60, ge=10, le=300)
+    volcano_ark_api_key: str = ""
+    volcano_ark_base_url: str = "https://ark.cn-beijing.volces.com"
+    volcano_embedding_model: str = "doubao-embedding-vision-251215"
+    volcano_embedding_endpoint_id: str = ""
+    feature_multimodal_search: bool = False
+    embedding_request_timeout_seconds: int = Field(default=60, ge=10, le=300)
 
     def effective_pairing_token(self) -> str:
         if not self.pairing_token:

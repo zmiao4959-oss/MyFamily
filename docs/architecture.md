@@ -1,6 +1,6 @@
 # 家忆架构概览
 
-当前完成第五阶段可选 AI 闭环。
+当前完成第六阶段多模态搜索闭环。
 
 - Android：Kotlin、Jetpack Compose、Material 3、MVVM、Repository、Hilt、Room、DataStore、WorkManager、CameraX、Media3、Android Keystore。
 - 本地服务：FastAPI、SQLAlchemy 2、Alembic、PostgreSQL 17、pgvector。
@@ -25,6 +25,12 @@ Android 只向本地服务提交记录或人物 ID。FastAPI 创建 `processing_
 
 模型输出保存到 `ai_artifacts`，包含 Provider、模型、Prompt 版本、输入哈希和独立 JSON。默认均为 AI 建议，不覆盖原文。用户确认后，记录整理结果只写入独立 `ai_summary`、标签和 `claims`；问答来源必须来自本轮只读工具检索。worker 最多自动尝试三次，失败后可由用户手动重试。
 
+## 搜索与 Embedding 数据流
+
+关键词搜索始终可用，不依赖模型。启用多模态搜索后，记录、人物或图片变化会按内容哈希创建 `embedding_generate` 数据库任务；独立 worker 使用可替换的 `VolcanoEmbeddingProvider` 调用火山方舟 `/api/v3/embeddings/multimodal`，将文字与图片映射到同一向量空间。图片优先使用服务端缩略图，Key 只存在于本地服务环境变量中。
+
+向量保存在 PostgreSQL `embeddings.vector` 的 pgvector 列。搜索先根据家庭、软删除状态、人物、标签、时间和媒体类型得到允许访问的对象集合，再计算向量相似度。内容哈希未变化的 ready/pending 索引不会重复排队；变化后旧向量清空并重新生成。
+
 ## 阶段边界
 
-第五阶段不实现向量或图片语义搜索。工具 `create_record_draft` 和 `suggest_relationship` 只返回待确认建议，不直接写正式记录或人物关系；删除、可见范围和正式事实确认能力不暴露给模型。
+第六阶段不实现视觉内容生成、人物识别、OCR 或图片事实提取；图片向量只用于相似性检索。工具 `create_record_draft` 和 `suggest_relationship` 仍只返回待确认建议，不直接写正式记录或人物关系。

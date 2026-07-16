@@ -34,6 +34,8 @@ def test_settings(tmp_path):
         max_upload_size_mb=2,
         feature_ai=False,
         deepseek_api_key="",
+        feature_multimodal_search=False,
+        volcano_ark_api_key="",
     )
 
 
