@@ -208,7 +208,14 @@ def restore_backup(backup_id: str, request: RestoreRequest, db: Session = Depend
     manifest, data, media = _read_archive(_archive_path(record, settings), request.password)
     safety = create_encrypted_backup(db, settings, request.password, reason="pre_restore")
     try:
-        for transient in (UploadSession.__table__, ProcessingJob.__table__, SyncChange.__table__):
+        synced_tables = {
+            "persons": "person", "relationships": "relationship", "records": "record", "tags": "tag",
+        }
+        previous_ids = {
+            name: set(db.execute(select(next(table for table in EXPORT_TABLES if table.name == name).c.id)).scalars())
+            for name in synced_tables
+        }
+        for transient in (UploadSession.__table__, ProcessingJob.__table__):
             db.execute(delete(transient))
         for table in reversed(EXPORT_TABLES):
             db.execute(delete(table))
@@ -225,6 +232,14 @@ def restore_backup(backup_id: str, request: RestoreRequest, db: Session = Depend
                     destination = _safe_file(media_root, relative)
                     destination.parent.mkdir(parents=True, exist_ok=True)
                     destination.write_bytes(media[member])
+        for table_name, entity_type in synced_tables.items():
+            restored_rows = data[table_name]
+            restored_ids = {row["id"] for row in restored_rows}
+            for row in restored_rows:
+                operation = "delete" if row.get("deleted_at") else "upsert"
+                db.add(SyncChange(entity_type=entity_type, entity_id=row["id"], operation=operation))
+            for removed_id in previous_ids[table_name] - restored_ids:
+                db.add(SyncChange(entity_type=entity_type, entity_id=removed_id, operation="delete"))
         db.commit()
     except Exception:
         db.rollback()

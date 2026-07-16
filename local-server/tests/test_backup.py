@@ -26,6 +26,7 @@ def test_encrypted_backup_can_be_inspected_downloaded_and_restored(client, auth_
     assert hashlib.sha256(downloaded.content).hexdigest() == backup["sha256"]
 
     assert client.delete(f"/persons/{person.json()['id']}", headers=auth_headers).status_code == 204
+    before_restore_version = client.get("/sync/changes", headers=auth_headers).json()["latest_version"]
     missing_confirmation = client.post(
         f"/backup/{backup['id']}/restore", headers=auth_headers,
         json={"password": password, "confirmation": "NO"},
@@ -39,6 +40,8 @@ def test_encrypted_backup_can_be_inspected_downloaded_and_restored(client, auth_
     assert restored.json()["restored"] is True
     people = client.get("/persons", headers=auth_headers).json()
     assert any(item["name"] == "备份测试人物" for item in people)
+    restore_changes = client.get(f"/sync/changes?after={before_restore_version}", headers=auth_headers).json()["changes"]
+    assert any(item["entity_id"] == person.json()["id"] and item["operation"] == "upsert" for item in restore_changes)
 
 
 def test_backup_requires_authentication(client):
