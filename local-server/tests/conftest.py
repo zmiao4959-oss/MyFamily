@@ -32,6 +32,8 @@ def test_settings(tmp_path):
         media_root=tmp_path / "media",
         backup_root=tmp_path / "backups",
         max_upload_size_mb=2,
+        feature_ai=False,
+        deepseek_api_key="",
     )
 
 

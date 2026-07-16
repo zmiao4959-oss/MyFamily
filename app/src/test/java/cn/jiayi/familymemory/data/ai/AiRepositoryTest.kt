@@ -11,8 +11,10 @@ class AiRepositoryTest {
     fun disabledAndMissingKeyHaveActionableMessages() {
         val disabled = HttpException(Response.error<Unit>(409, "".toResponseBody(null)))
         val missingKey = HttpException(Response.error<Unit>(503, "".toResponseBody(null)))
+        val missingRecord = HttpException(Response.error<Unit>(404, "".toResponseBody(null)))
 
         assertTrue(AiRepository.userMessage(disabled).contains("FEATURE_AI=true"))
         assertTrue(AiRepository.userMessage(missingKey).contains("DeepSeek Key"))
+        assertTrue(AiRepository.userMessage(missingRecord).contains("还没有同步"))
     }
 }

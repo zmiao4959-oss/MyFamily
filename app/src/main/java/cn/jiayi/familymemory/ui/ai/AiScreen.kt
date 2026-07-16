@@ -114,6 +114,9 @@ private fun ArtifactCard(artifact: AiArtifactDto, onConfirm: () -> Unit, onRejec
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(artifactTitle(artifact.artifactType), style = MaterialTheme.typography.titleLarge)
             Text("AI 建议 · ${artifact.model} · ${if (artifact.userConfirmed) "已由你确认" else "尚未确认"}", color = MaterialTheme.colorScheme.primary)
+            if (!artifact.userConfirmed && artifact.artifactType != "answer" && artifact.status != "rejected") {
+                Text("确认表示采纳并保存这份 AI 建议；原始记录不会被覆盖。")
+            }
             when (artifact.artifactType) {
                 "organized_record" -> {
                     Field("建议标题", artifact.outputJson.text("title"))
@@ -138,7 +141,7 @@ private fun ArtifactCard(artifact: AiArtifactDto, onConfirm: () -> Unit, onRejec
             if (!artifact.userConfirmed && artifact.artifactType != "answer" && artifact.status != "rejected") {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = onReject, modifier = Modifier.weight(1f)) { Text("忽略建议") }
-                    Button(onClick = onConfirm, modifier = Modifier.weight(1f)) { Text("由我确认") }
+                    Button(onClick = onConfirm, modifier = Modifier.weight(1f)) { Text("采纳并保存") }
                 }
             }
         }
