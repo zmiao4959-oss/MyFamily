@@ -167,6 +167,63 @@ class UploadSession(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
 
+class Claim(Base):
+    __tablename__ = "claims"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False, default=DEFAULT_OWNER_ID)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, default=DEFAULT_FAMILY_ID, index=True)
+    subject_person_id: Mapped[str | None] = mapped_column(ForeignKey("persons.id"), nullable=True, index=True)
+    predicate: Mapped[str] = mapped_column(String(120), nullable=False)
+    object_person_id: Mapped[str | None] = mapped_column(ForeignKey("persons.id"), nullable=True)
+    object_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    source_record_id: Mapped[str | None] = mapped_column(ForeignKey("records.id"), nullable=True, index=True)
+    claim_type: Mapped[str] = mapped_column(String(40), default="ai_suggestion", nullable=False)
+    verification_status: Mapped[str] = mapped_column(String(40), default="unverified_information", nullable=False)
+    confidence: Mapped[float | None] = mapped_column(nullable=True)
+    created_by_ai: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+
+class AIArtifact(Base):
+    __tablename__ = "ai_artifacts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False, default=DEFAULT_OWNER_ID)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, default=DEFAULT_FAMILY_ID, index=True)
+    record_id: Mapped[str | None] = mapped_column(ForeignKey("records.id"), nullable=True, index=True)
+    person_id: Mapped[str | None] = mapped_column(ForeignKey("persons.id"), nullable=True, index=True)
+    artifact_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    model: Mapped[str] = mapped_column(String(120), nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    output_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(30), default="suggestion", nullable=False)
+    user_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ProcessingJob(Base):
+    __tablename__ = "processing_jobs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False, default=DEFAULT_OWNER_ID)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, default=DEFAULT_FAMILY_ID, index=True)
+    job_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    record_id: Mapped[str | None] = mapped_column(ForeignKey("records.id"), nullable=True, index=True)
+    person_id: Mapped[str | None] = mapped_column(ForeignKey("persons.id"), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(50), default="deepseek", nullable=False)
+    model: Mapped[str] = mapped_column(String(120), nullable=False)
+    payload_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    result_artifact_id: Mapped[str | None] = mapped_column(ForeignKey("ai_artifacts.id"), nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+
 class SyncChange(Base):
     __tablename__ = "sync_changes"
     version: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

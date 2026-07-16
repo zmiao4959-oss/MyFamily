@@ -1,6 +1,6 @@
 # 家忆架构概览
 
-当前完成第四阶段主要界面闭环。
+当前完成第五阶段可选 AI 闭环。
 
 - Android：Kotlin、Jetpack Compose、Material 3、MVVM、Repository、Hilt、Room、DataStore、WorkManager、CameraX、Media3、Android Keystore。
 - 本地服务：FastAPI、SQLAlchemy 2、Alembic、PostgreSQL 17、pgvector。
@@ -19,6 +19,12 @@
 
 单 Activity Compose 架构提供首页、家族、记录、时间线和我的五个主入口。人物详情与记录详情直接订阅 Room 数据；家族树使用可缩放、可拖动的 Compose 图层，布局算法与 UI 分离以便单元测试。记录编辑草稿写入 Room `record_drafts`，进程退出后仍可恢复。正式界面和媒体管理共享 Repository，不建立重复数据源。
 
+## AI 数据流
+
+Android 只向本地服务提交记录或人物 ID。FastAPI 创建 `processing_jobs`，独立 worker 从 PostgreSQL 获取最小必要资料并调用可替换的 `AIProvider`。DeepSeek Provider 使用 OpenAI 兼容的 `/chat/completions`；结构化任务启用 JSON 模式，并由 Pydantic 严格校验。第一次无效时只进行一次结构修复，仍无效则进入受限重试。
+
+模型输出保存到 `ai_artifacts`，包含 Provider、模型、Prompt 版本、输入哈希和独立 JSON。默认均为 AI 建议，不覆盖原文。用户确认后，记录整理结果只写入独立 `ai_summary`、标签和 `claims`；问答来源必须来自本轮只读工具检索。worker 最多自动尝试三次，失败后可由用户手动重试。
+
 ## 阶段边界
 
-第四阶段不调用模型服务。AI 状态在首页明确显示为未启用，第五阶段再实现结构化整理、人物小传、采访问题、问答和用户确认流程。
+第五阶段不实现向量或图片语义搜索。工具 `create_record_draft` 和 `suggest_relationship` 只返回待确认建议，不直接写正式记录或人物关系；删除、可见范围和正式事实确认能力不暴露给模型。

@@ -80,6 +80,8 @@ fun PersonDetailScreen(
     onUpdate: (PersonInput) -> Unit,
     onAddRelationship: (String, String) -> Unit,
     onOpenRecord: (String) -> Unit,
+    onOpenAi: () -> Unit,
+    aiBiography: String? = null,
 ) {
     var editing by remember { mutableStateOf(false) }
     var relationshipDialog by remember { mutableStateOf(false) }
@@ -90,6 +92,7 @@ fun PersonDetailScreen(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onBack) { Text("返回") }
                 Button(onClick = { editing = true }) { Text("编辑资料") }
+                OutlinedButton(onClick = onOpenAi) { Text("AI 辅助") }
             }
         }
         item {
@@ -103,6 +106,15 @@ fun PersonDetailScreen(
                     if (person.biography.isNotBlank()) Text(person.biography)
                     if (person.notes.isNotBlank()) Text("备注：${person.notes}")
                     Text(if (person.verificationStatus == "confirmed_fact") "已确认资料" else "资料待确认", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+        if (!aiBiography.isNullOrBlank()) item {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("已确认的 AI 小传", style = MaterialTheme.typography.titleLarge)
+                    Text(aiBiography)
+                    Text("这是 AI 整理内容，原始来源记录仍单独保留。", color = MaterialTheme.colorScheme.primary)
                 }
             }
         }

@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.jiayi.familymemory.data.local.PersonEntity
 import cn.jiayi.familymemory.data.local.RecordEntity
+import cn.jiayi.familymemory.ui.ai.AiScreen
+import cn.jiayi.familymemory.ui.ai.AiViewModel
 
 private enum class MainTab(val label: String, val mark: String) {
     HOME("首页", "家"), FAMILY("家族", "人"), RECORDS("记录", "记"), TIMELINE("时间线", "时"), SETTINGS("我的", "我")
@@ -41,14 +44,19 @@ private enum class MainTab(val label: String, val mark: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainApp(viewModel: MainViewModel, onOpenConnection: () -> Unit, onOpenMedia: () -> Unit) {
+fun MainApp(viewModel: MainViewModel, aiViewModel: AiViewModel, onOpenConnection: () -> Unit, onOpenMedia: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val aiState by aiViewModel.uiState.collectAsStateWithLifecycle()
     var tabName by rememberSaveable { mutableStateOf(MainTab.HOME.name) }
     var selectedPersonId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedRecordId by rememberSaveable { mutableStateOf<String?>(null) }
     var showTree by rememberSaveable { mutableStateOf(false) }
+    var showAi by rememberSaveable { mutableStateOf(false) }
+    var aiRecordId by rememberSaveable { mutableStateOf<String?>(null) }
+    var aiPersonId by rememberSaveable { mutableStateOf<String?>(null) }
     val tab = MainTab.valueOf(tabName)
     val title = when {
+        showAi -> "AI 助手"
         selectedPersonId != null -> "人物详情"
         selectedRecordId != null -> "记录详情"
         showTree -> "家族树"
@@ -60,8 +68,8 @@ fun MainApp(viewModel: MainViewModel, onOpenConnection: () -> Unit, onOpenMedia:
             NavigationBar {
                 MainTab.entries.forEach { item ->
                     NavigationBarItem(
-                        selected = tab == item && selectedPersonId == null && selectedRecordId == null && !showTree,
-                        onClick = { tabName = item.name; selectedPersonId = null; selectedRecordId = null; showTree = false },
+                        selected = tab == item && selectedPersonId == null && selectedRecordId == null && !showTree && !showAi,
+                        onClick = { tabName = item.name; selectedPersonId = null; selectedRecordId = null; showTree = false; showAi = false },
                         icon = { Text(item.mark, fontWeight = FontWeight.Bold) }, label = { Text(item.label) },
                     )
                 }
@@ -76,21 +84,39 @@ fun MainApp(viewModel: MainViewModel, onOpenConnection: () -> Unit, onOpenMedia:
                 }
             }
             when {
+                showAi -> AiScreen(
+                    aiViewModel, state.persons, state.records, aiRecordId, aiPersonId,
+                    onBack = { showAi = false; aiRecordId = null; aiPersonId = null },
+                    onOpenRecord = { id -> showAi = false; aiRecordId = null; aiPersonId = null; selectedRecordId = id },
+                    onOpenMedia = onOpenMedia,
+                )
                 selectedPersonId != null -> {
                     val person = state.persons.firstOrNull { it.id == selectedPersonId }
+                    LaunchedEffect(person?.id) { if (person != null) aiViewModel.loadLatest(null, person.id) }
+                    val biography = aiState.artifacts.firstOrNull {
+                        it.personId == person?.id && it.artifactType == "biography_draft" && it.userConfirmed
+                    }?.outputJson?.get("biography")?.toString()
                     if (person == null) selectedPersonId = null else PersonDetailScreen(
                         person, state.persons, state.relationships, state.records,
                         onBack = { selectedPersonId = null },
                         onUpdate = { viewModel.updatePerson(person, it) },
                         onAddRelationship = { otherId, type -> viewModel.addRelationship(person.id, otherId, type) },
                         onOpenRecord = { selectedRecordId = it; selectedPersonId = null },
+                        onOpenAi = { aiPersonId = person.id; showAi = true },
+                        aiBiography = biography,
                     )
                 }
                 selectedRecordId != null -> {
                     val record = state.records.firstOrNull { it.id == selectedRecordId }
+                    LaunchedEffect(record?.id) { if (record != null) aiViewModel.loadLatest(record.id, null) }
+                    val summary = aiState.artifacts.firstOrNull {
+                        it.recordId == record?.id && it.artifactType == "organized_record" && it.userConfirmed
+                    }?.outputJson?.get("summary")?.toString()
                     if (record == null) selectedRecordId = null else RecordDetailScreen(
                         record, state.persons, state.tags, state.recordTags, state.media,
                         onBack = { selectedRecordId = null },
+                        onOpenAi = { aiRecordId = record.id; showAi = true },
+                        aiSummary = summary,
                     )
                 }
                 showTree -> FamilyTreeScreen(state.persons, state.relationships, onOpenPerson = { selectedPersonId = it; showTree = false }, onShowList = { showTree = false })
@@ -101,6 +127,7 @@ fun MainApp(viewModel: MainViewModel, onOpenConnection: () -> Unit, onOpenMedia:
                     onOpenMedia = onOpenMedia,
                     onOpenPerson = { selectedPersonId = it },
                     onOpenRecord = { selectedRecordId = it },
+                    onOpenAi = { showAi = true },
                 )
                 tab == MainTab.FAMILY -> PeopleListScreen(state.persons, { selectedPersonId = it }, { viewModel.addPerson(it) }, { showTree = true })
                 tab == MainTab.RECORDS -> RecordCreateScreen(
@@ -108,7 +135,7 @@ fun MainApp(viewModel: MainViewModel, onOpenConnection: () -> Unit, onOpenMedia:
                     onSave = { viewModel.addRecord(it) { id -> selectedRecordId = id } }, onOpenMedia = onOpenMedia,
                 )
                 tab == MainTab.TIMELINE -> TimelineScreen(state.records, state.persons, state.tags, state.recordTags) { selectedRecordId = it }
-                else -> SettingsScreen(state, viewModel::sync, viewModel::loadDemo, onOpenConnection, onOpenMedia, viewModel::clearLocal)
+                else -> SettingsScreen(state, viewModel::sync, viewModel::loadDemo, onOpenConnection, onOpenMedia, { showAi = true }, viewModel::clearLocal)
             }
         }
     }
@@ -122,6 +149,7 @@ private fun HomeScreen(
     onOpenMedia: () -> Unit,
     onOpenPerson: (String) -> Unit,
     onOpenRecord: (String) -> Unit,
+    onOpenAi: () -> Unit,
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("把家人的故事，安静地留在自己手中。", style = MaterialTheme.typography.headlineSmall)
@@ -146,8 +174,11 @@ private fun HomeScreen(
         }
         RecentPeople(state.persons.take(4), onOpenPerson)
         RecentRecords(state.records.take(5), onOpenRecord)
-        Card(Modifier.fillMaxWidth()) {
-            Text("AI 整理尚未启用，将在第五阶段加入；没有 AI Key 不影响当前全部基础功能。", Modifier.padding(14.dp))
+        Card(Modifier.fillMaxWidth().clickable { onOpenAi() }) {
+            Column(Modifier.padding(14.dp)) {
+                Text("AI 助手", fontWeight = FontWeight.SemiBold)
+                Text("整理记录、生成小传和采访问题；所有结果都需要你确认。")
+            }
         }
     }
 }
@@ -179,6 +210,7 @@ private fun SettingsScreen(
     onLoadDemo: () -> Unit,
     onConnection: () -> Unit,
     onMedia: () -> Unit,
+    onAi: () -> Unit,
     onClearLocal: () -> Unit,
 ) {
     var confirmClear by remember { mutableStateOf(false) }
@@ -195,9 +227,10 @@ private fun SettingsScreen(
         Text("资料与调试", style = MaterialTheme.typography.titleLarge)
         OutlinedButton(onClick = onLoadDemo, enabled = state.hasAccessToken && !state.busy, modifier = Modifier.fillMaxWidth()) { Text("载入虚构演示家族") }
         OutlinedButton(onClick = onMedia, modifier = Modifier.fillMaxWidth()) { Text("媒体与录音管理") }
+        OutlinedButton(onClick = onAi, modifier = Modifier.fillMaxWidth()) { Text("AI 设置与资料助手") }
         OutlinedButton(onClick = { confirmClear = true }, modifier = Modifier.fillMaxWidth()) { Text("清空手机本地资料") }
-        Text("AI 设置、数据备份、App 锁将在后续阶段启用。当前版本不含广告、行为分析或云端账号。", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("家忆 0.4.0 · 第四阶段主要界面", style = MaterialTheme.typography.labelLarge)
+        Text("数据备份、App 锁将在后续阶段启用。当前版本不含广告、行为分析或云端账号。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("家忆 0.5.0 · 第五阶段 AI", style = MaterialTheme.typography.labelLarge)
     }
     if (confirmClear) AlertDialog(
         onDismissRequest = { confirmClear = false }, title = { Text("确认清空手机资料？") },

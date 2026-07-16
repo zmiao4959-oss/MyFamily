@@ -12,15 +12,20 @@ from app.main import create_app
 
 
 @pytest.fixture
-def client(tmp_path) -> Generator[TestClient, None, None]:
+def session_factory():
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    testing_session = sessionmaker(bind=engine, expire_on_commit=False)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
     Base.metadata.create_all(engine)
-    settings = Settings(
+    return factory
+
+
+@pytest.fixture
+def test_settings(tmp_path):
+    return Settings(
         app_secret="test-secret-with-enough-length",
         pairing_token="test-pairing-token",
         database_url="sqlite://",
@@ -29,13 +34,17 @@ def client(tmp_path) -> Generator[TestClient, None, None]:
         max_upload_size_mb=2,
     )
 
+
+@pytest.fixture
+def client(session_factory, test_settings) -> Generator[TestClient, None, None]:
+
     def override_db() -> Generator[Session, None, None]:
-        with testing_session() as session:
+        with session_factory() as session:
             yield session
 
     app = create_app()
     app.dependency_overrides[get_db] = override_db
-    app.dependency_overrides[get_settings] = lambda: settings
+    app.dependency_overrides[get_settings] = lambda: test_settings
     with TestClient(app) as test_client:
         yield test_client
 

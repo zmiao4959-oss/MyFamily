@@ -131,13 +131,18 @@ fun RecordDetailScreen(
     recordTags: List<RecordTagEntity>,
     media: List<MediaEntity>,
     onBack: () -> Unit,
+    onOpenAi: () -> Unit,
+    aiSummary: String? = null,
 ) {
     val relatedPeople = persons.filter { it.id in record.personIds }
     val relatedTagIds = recordTags.filter { it.recordId == record.id }.map { it.tagId }.toSet()
     val relatedTags = tags.filter { it.id in relatedTagIds }
     val attachments = media.filter { it.recordId == record.id }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        OutlinedButton(onClick = onBack) { Text("返回") }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = onBack) { Text("返回") }
+            Button(onClick = onOpenAi) { Text("让 AI 整理") }
+        }
         Text(record.title, style = MaterialTheme.typography.headlineMedium)
         Text(recordDateText(record), color = MaterialTheme.colorScheme.primary)
         if (record.locationText.isNotBlank()) Text("地点：${record.locationText}")
@@ -147,6 +152,15 @@ fun RecordDetailScreen(
             Column(Modifier.padding(18.dp)) {
                 Text("原始记录", fontWeight = FontWeight.SemiBold)
                 Text(record.originalText.ifBlank { "未填写文字" }, modifier = Modifier.padding(top = 8.dp))
+            }
+        }
+        if (!aiSummary.isNullOrBlank()) {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(18.dp)) {
+                    Text("已确认的 AI 摘要", fontWeight = FontWeight.SemiBold)
+                    Text(aiSummary, modifier = Modifier.padding(top = 8.dp))
+                    Text("原始记录未被修改", color = MaterialTheme.colorScheme.primary)
+                }
             }
         }
         Text("附件（${attachments.size}）", style = MaterialTheme.typography.titleLarge)
