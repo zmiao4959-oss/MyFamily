@@ -56,7 +56,7 @@ object NetworkModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): FamilyDatabase =
         Room.databaseBuilder(context, FamilyDatabase::class.java, "family-memory.db")
-            .addMigrations(FamilyDatabase.MIGRATION_1_2)
+            .addMigrations(FamilyDatabase.MIGRATION_1_2, FamilyDatabase.MIGRATION_2_3)
             .build()
 
     @Provides

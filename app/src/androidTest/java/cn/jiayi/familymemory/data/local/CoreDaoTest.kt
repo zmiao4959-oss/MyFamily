@@ -85,4 +85,30 @@ class CoreDaoTest {
         assertEquals(50, queued.uploadProgress)
         assertEquals(50, queued.uploadedBytes)
     }
+
+    @Test
+    fun recordDraftSurvivesAndCanBeCleared() = runBlocking {
+        val draft = RecordDraftEntity(title = "未完成的回忆", originalText = "先写到这里", occurredYear = "1998")
+        dao.saveRecordDraft(draft)
+
+        assertEquals(draft, dao.observeRecordDraft().first())
+
+        dao.clearRecordDraft()
+        assertEquals(null, dao.observeRecordDraft().first())
+    }
+
+    @Test
+    fun recordAndTagsAreSavedWithOutbox() = runBlocking {
+        val record = RecordEntity(id = "record-2", clientUuid = "record-2", title = "春节", updatedAt = 2)
+        val tag = TagEntity(id = "tag-1", clientUuid = "tag-1", name = "春节", updatedAt = 1)
+        dao.upsertTag(tag)
+        dao.saveRecordWithTagsAndQueue(
+            record,
+            listOf(RecordTagEntity(record.id, tag.id)),
+            PendingSyncEntity(entityType = "record", clientUuid = record.clientUuid, operation = "upsert", payloadJson = "{}", createdAt = 2),
+        )
+
+        assertEquals(listOf(RecordTagEntity(record.id, tag.id)), dao.observeRecordTags().first())
+        assertEquals(1, dao.observePendingCount().first())
+    }
 }

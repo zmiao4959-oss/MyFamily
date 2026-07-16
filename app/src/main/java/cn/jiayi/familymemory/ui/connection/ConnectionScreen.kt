@@ -119,7 +119,7 @@ fun ConnectionScreen(
                         onClick = onOpenData,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                     ) {
-                        Text(if (state.isPaired) "进入第二阶段资料测试" else "进入离线资料测试")
+                        Text(if (state.isPaired) "返回家忆" else "进入家忆离线使用")
                     }
 
                     if (state.isPaired) {

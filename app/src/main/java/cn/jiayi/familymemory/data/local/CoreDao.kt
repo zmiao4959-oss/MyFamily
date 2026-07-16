@@ -10,6 +10,18 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CoreDao {
+    @Query("SELECT * FROM record_drafts WHERE id = 'current'")
+    fun observeRecordDraft(): Flow<RecordDraftEntity?>
+
+    @Upsert
+    suspend fun saveRecordDraft(draft: RecordDraftEntity)
+
+    @Query("DELETE FROM record_drafts WHERE id = 'current'")
+    suspend fun clearRecordDraft()
+
+    @Query("SELECT * FROM record_tags")
+    fun observeRecordTags(): Flow<List<RecordTagEntity>>
+
     @Query("SELECT * FROM media_assets ORDER BY createdAt DESC")
     fun observeMedia(): Flow<List<MediaEntity>>
 
@@ -122,6 +134,13 @@ interface CoreDao {
     }
 
     @Transaction
+    suspend fun saveRecordWithTagsAndQueue(record: RecordEntity, tags: List<RecordTagEntity>, item: PendingSyncEntity) {
+        upsertRecord(record)
+        if (tags.isNotEmpty()) upsertRecordTags(tags)
+        enqueue(item)
+    }
+
+    @Transaction
     suspend fun saveRelationshipAndQueue(relationship: RelationshipEntity, item: PendingSyncEntity) {
         upsertRelationship(relationship)
         enqueue(item)
@@ -150,6 +169,7 @@ interface CoreDao {
 
     @Transaction
     suspend fun clearAllCoreData() {
+        clearRecordDraft()
         clearRecordTags()
         clearPending()
         clearMedia()

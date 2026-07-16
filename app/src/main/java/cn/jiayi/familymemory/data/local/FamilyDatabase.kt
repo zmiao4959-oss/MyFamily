@@ -16,8 +16,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PendingSyncEntity::class,
         SyncStateEntity::class,
         MediaEntity::class,
+        RecordDraftEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -55,6 +56,22 @@ abstract class FamilyDatabase : RoomDatabase() {
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_media_assets_clientUuid ON media_assets(clientUuid)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_media_assets_recordId ON media_assets(recordId)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_media_assets_uploadStatus ON media_assets(uploadStatus)")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS record_drafts (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        originalText TEXT NOT NULL,
+                        occurredYear TEXT NOT NULL,
+                        locationText TEXT NOT NULL,
+                        personIds TEXT NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )""".trimIndent(),
+                )
             }
         }
     }

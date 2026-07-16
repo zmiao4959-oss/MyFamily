@@ -149,3 +149,14 @@ data class MediaEntity(
     val lastError: String? = null,
     val createdAt: Long,
 )
+
+@Entity(tableName = "record_drafts")
+data class RecordDraftEntity(
+    @androidx.room.PrimaryKey val id: String = "current",
+    val title: String = "",
+    val originalText: String = "",
+    val occurredYear: String = "",
+    val locationText: String = "",
+    val personIds: List<String> = emptyList(),
+    val updatedAt: Long = System.currentTimeMillis(),
+)
