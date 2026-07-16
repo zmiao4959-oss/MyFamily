@@ -115,13 +115,14 @@ fun ConnectionScreen(
                         Text(if (state.isConnecting) "正在测试并配对" else "测试连接并保存")
                     }
 
+                    Button(
+                        onClick = onOpenData,
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                    ) {
+                        Text(if (state.isPaired) "进入第二阶段资料测试" else "进入离线资料测试")
+                    }
+
                     if (state.isPaired) {
-                        Button(
-                            onClick = onOpenData,
-                            modifier = Modifier.fillMaxWidth().height(52.dp),
-                        ) {
-                            Text("进入第二阶段资料测试")
-                        }
                         OutlinedButton(
                             onClick = viewModel::clearPairing,
                             modifier = Modifier
