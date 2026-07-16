@@ -174,7 +174,11 @@ private fun MediaRow(item: MediaEntity, onPreview: () -> Unit, onRetry: () -> Un
             item.lastError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onPreview) { Text(if (item.mediaType == "image") "查看" else "播放") }
-                if (item.uploadStatus == "failed") Button(onClick = onRetry) { Text("重试上传") }
+                if (item.uploadStatus == "failed" || item.uploadStatus == "pending") {
+                    Button(onClick = onRetry) {
+                        Text(if (item.uploadStatus == "pending") "立即尝试上传" else "重试上传")
+                    }
+                }
             }
         }
     }
