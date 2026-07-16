@@ -27,3 +27,18 @@
 - `POST /search/jobs/{id}/retry`：重新排队一个失败的 Embedding 任务。
 
 语义和多模态搜索关闭时返回 409；缺少火山引擎 Key/模型配置或 Provider 暂时不可用时返回 503。搜索结果只包含当前家庭中未软删除且通过请求筛选条件的对象。
+
+## 备份与安全接口
+
+以下接口均要求已配对设备的 Bearer Token：
+
+- `POST /backup/create`：使用用户当次提供的密码创建 AES-256 加密备份。
+- `GET /backup/list`：列出备份日期、大小和人物/记录/媒体数量。
+- `POST /backup/{id}/inspect`：验证密码、格式和内容哈希并返回清单。
+- `POST /backup/{id}/restore`：要求 `confirmation=RESTORE`；先创建安全备份，再恢复并生成手机同步通知。
+- `GET /backup/{id}/download`：认证后下载加密备份文件。
+- `GET /pair/tokens`：列出当前和历史授权设备。
+- `DELETE /pair/tokens/{id}`：撤销其他设备的访问令牌。
+- `POST /pair/admin-token/regenerate`：轮换管理员配对令牌，明文只返回一次。
+
+备份密码、API Key、访问令牌、临时上传和后台任务不会写入备份。错误密码或哈希校验失败返回 400，不会修改业务资料。

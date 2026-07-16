@@ -1,6 +1,7 @@
 package cn.jiayi.familymemory.ui.connection
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,7 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cn.jiayi.familymemory.R
+import cn.jiayi.familymemory.ui.components.StatusBanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +61,10 @@ fun ConnectionScreen(
             Text(
                 text = "请确保手机与运行本地服务的电脑或 NAS 在同一个局域网。所有基础资料由你自己的设备保存。",
                 style = MaterialTheme.typography.bodyLarge,
+            )
+            Image(
+                painterResource(R.drawable.welcome_family_album), contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(220.dp), contentScale = ContentScale.Crop,
             )
 
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -89,13 +98,7 @@ fun ConnectionScreen(
                         )
                     }
 
-                    state.message?.let { message ->
-                        Text(
-                            text = message,
-                            color = if (state.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
+                    state.message?.let { message -> StatusBanner(message, state.isError, onRetry = if (state.isError) viewModel::connect else null) }
 
                     Button(
                         onClick = viewModel::connect,

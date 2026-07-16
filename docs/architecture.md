@@ -1,11 +1,15 @@
 # 家忆架构概览
 
-当前完成第七阶段安全与备份闭环。
+当前完成第八阶段完整第一版闭环。
 
 - Android：Kotlin、Jetpack Compose、Material 3、MVVM、Repository、Hilt、Room、DataStore、WorkManager、CameraX、Media3、Android Keystore。
 - 本地服务：FastAPI、SQLAlchemy 2、Alembic、PostgreSQL 17、pgvector。
 - 后台任务：Android WorkManager 负责媒体上传和指数退避；受限局域网也会实际尝试访问用户本地服务。服务端独立 worker 使用同一 PostgreSQL，不引入消息中间件。
 - 部署：Docker Compose 同时启动 `api`、`worker`、`postgres`。
+
+## 视觉与无障碍
+
+Android 使用固定的暖色 Light/Dark Material 3 色板，避免系统动态色破坏家庭档案视觉和错误对比度。正文、按钮和标签采用更大的基础字号，同时保留系统字体缩放。原创 Image 2 素材统一转换为本地 WebP，Compose 只负责中文文字、交互和无障碍描述；App 运行时不依赖任何图片生成服务。空状态与错误状态使用共享组件，关键错误提供文字“重试”操作。
 
 ## 安全边界
 
@@ -37,4 +41,4 @@ Android 只向本地服务提交记录或人物 ID。FastAPI 创建 `processing_
 
 ## 阶段边界
 
-第七阶段仍不实现视觉内容生成、人物识别、OCR 或图片事实提取；图片向量只用于相似性检索。备份密码不保存，忘记密码后无法解密，恢复只面向同一备份格式版本。
+第一版仍不实现运行时视觉内容生成、人物识别、OCR 或图片事实提取；图片向量只用于相似性检索。备份密码不保存，忘记密码后无法解密，恢复只面向同一备份格式版本。

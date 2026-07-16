@@ -39,6 +39,8 @@ import cn.jiayi.familymemory.data.local.RecordDraftEntity
 import cn.jiayi.familymemory.data.local.RecordEntity
 import cn.jiayi.familymemory.data.local.RecordTagEntity
 import cn.jiayi.familymemory.data.local.TagEntity
+import cn.jiayi.familymemory.R
+import cn.jiayi.familymemory.ui.components.EmptyState
 import java.io.File
 import java.util.Calendar
 
@@ -206,7 +208,11 @@ fun TimelineScreen(
             OutlinedButton(onClick = { type = cycle(listOf("text", "image", "audio", "video"), type) }) { Text(type?.let(::recordTypeLabel) ?: "全部类型") }
             if (tags.isNotEmpty()) OutlinedButton(onClick = { tagId = cycle(tags.map { it.id }, tagId) }) { Text(tagId?.let { id -> tags.firstOrNull { it.id == id }?.name } ?: "全部标签") }
         }
-        if (filtered.isEmpty()) Text("没有符合条件的记录", modifier = Modifier.padding(top = 24.dp))
+        if (filtered.isEmpty()) EmptyState(
+            image = R.drawable.empty_records,
+            title = if (records.isEmpty()) "还没有人生记录" else "没有符合条件的记录",
+            description = if (records.isEmpty()) "文字、照片、录音和视频都会按时间安静地排列在这里。" else "可以减少筛选条件，或换一个关键词。",
+        )
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             grouped.keys.sortedWith(compareByDescending<Int?> { it ?: Int.MIN_VALUE }).forEach { year ->
                 Text(year?.toString() ?: "时间未确定", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)

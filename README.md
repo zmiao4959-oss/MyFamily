@@ -1,6 +1,6 @@
 # 家忆
 
-“家忆”是面向个人和家庭的本地优先电子族谱与人生档案 App。项目目前完成第七阶段：在本地优先资料、媒体、AI 助手和多模态搜索之外，新增 AES-256 加密备份、安全恢复、App 锁、设备授权和配对令牌管理。
+“家忆”是面向个人和家庭的本地优先电子族谱与人生档案 App。项目目前完成第八阶段：完整闭环包含本地优先资料、媒体、AI 助手、多模态搜索、AES-256 加密备份、App 锁，并完成原创视觉素材、深色模式、适老化、空状态和错误状态打磨。
 
 > AI 与多模态搜索默认关闭；没有任何模型 Key 时，基础功能、加密备份、App 锁和关键词搜索仍可完整使用。
 
@@ -11,6 +11,15 @@
 - `docs/`：架构等项目文档。
 - `docker-compose.yml`：本地一键部署。
 - `.env.example`：不含真实密钥的配置模板。
+- `scripts/`：启动、初始化、健康检查、备份、恢复和清除演示资料脚本。
+
+## 视觉预览
+
+![欢迎页原创插画](app/src/main/res/drawable-nodpi/welcome_family_album.webp)
+
+![空人物状态](app/src/main/res/drawable-nodpi/empty_people.webp)
+
+全部 10 项素材均由开发阶段的 OpenAI Image 2 原创生成，App 运行时不会调用 OpenAI。完整提示词、尺寸和后期处理记录见 `docs/image-prompts.md`。
 
 ## 本地服务启动
 
@@ -20,6 +29,8 @@
 4. 在项目根目录运行 `docker compose up -d --build`。
 5. 运行 `docker compose logs api`，查看 `Administrator pairing token`。
 6. 健康检查地址：`http://电脑局域网IP:8080/health`；OpenAPI 文档：`http://电脑局域网IP:8080/docs`。
+
+Windows 也可直接运行 `powershell -ExecutionPolicy Bypass -File scripts/start-local-server.ps1`；数据库初始化和健康检查分别使用 `scripts/initialize-database.ps1`、`scripts/health-check.ps1`。
 
 如果未设置 `PAIRING_TOKEN`，服务每次启动会生成一个新的管理员配对令牌；已配对手机的访问令牌仍保存在数据库中。
 
@@ -37,6 +48,16 @@ Debug 构建允许局域网 HTTP。Release 构建默认不允许明文网络流�
 命令行测试与构建：`gradlew.bat testDebugUnitTest assembleDebug`。
 
 Debug APK 生成在 `app/build/outputs/apk/debug/app-debug.apk`。
+
+## 数据目录与维护脚本
+
+Docker Volume 中的数据库、原始媒体、缩略图和备份彼此独立。媒体位于 `/data/media`，服务端备份位于 `/data/backups`；不要直接修改 Volume 内文件。
+
+- 创建并下载加密备份：`powershell -ExecutionPolicy Bypass -File scripts/create-backup.ps1`
+- 恢复已有服务端备份：`powershell -ExecutionPolicy Bypass -File scripts/restore-backup.ps1 -BackupId 备份ID`
+- 清除虚构演示资料：`powershell -ExecutionPolicy Bypass -File scripts/clear-demo-data.ps1`
+
+脚本会提示输入配对令牌和备份密码。也可以先设置 `FAMILY_MEMORY_PAIRING_TOKEN` 环境变量；不要把真实令牌写入脚本或提交到 Git。恢复前会显示日期和资料数量，必须输入 `RESTORE`，服务端还会自动创建恢复前安全备份。
 
 ## 后端开发测试
 
@@ -58,6 +79,17 @@ Debug APK 生成在 `app/build/outputs/apk/debug/app-debug.apk`。
 - 配对访问令牌在 Android Keystore 保护下保存，服务端只保存令牌哈希。
 - `.env` 已被 Git 忽略，不要提交真实密钥。
 - 本项目不接入广告、第三方行为分析或 Google Play Services 关键能力。
+- 若要关闭全部第三方 AI 调用，将 `.env` 中 `FEATURE_AI=false`、`FEATURE_MULTIMODAL_SEARCH=false`，然后重启服务；人物、记录、媒体、关键词搜索和备份仍可使用。
+
+## 常见错误
+
+- 模拟器访问电脑必须使用 `http://10.0.2.2:8080`，不能使用 `localhost`。
+- 真机连接受限时，检查手机和电脑是否在同一 Wi-Fi、防火墙是否只对家庭网络开放 TCP 8080。
+- “等待网络上传”时可点击立即尝试；Android 显示网络受限不代表本地服务一定不可访问。
+- `401` 表示访问令牌已撤销或配对令牌不正确；在连接设置中重新配对。
+- `409` 通常表示 AI/语义功能尚未启用；关键词搜索与基础资料不受影响。
+- `503` 表示数据库或模型 Provider 暂时不可用；先检查 `docker compose ps` 和服务日志。
+- 备份密码无法找回。错误密码只会拒绝恢复，不会修改现有资料。
 
 ## DeepSeek AI 配置
 
@@ -156,3 +188,13 @@ Endpoint ID 优先于模型名；如果账号支持直接使用模型 ID，可�
 5. App 锁启用和关闭都要求系统身份验证；离开 App 后再次打开，需使用指纹、面容或设备锁屏密码。
 6. 已授权设备列表能区分当前设备，可撤销其他设备；被撤销设备不能继续访问服务。
 7. 重新生成管理员配对令牌后旧令牌立即失效，新令牌只显示一次；日志会遮盖 Bearer Token、API Key 和密码。
+
+## 第八阶段验收点
+
+1. App 图标、欢迎页、人物/记录空状态、三种默认头像、家族树、录音和备份插画均为原创 WebP，提示词记录在 `docs/image-prompts.md`。
+2. 系统切换深色模式后，背景、文字、卡片、错误提示和按钮保持清晰对比，视觉仍使用统一的米色、胡桃木棕、鼠尾草绿和陶土红。
+3. 默认正文、标签和按钮字号增大，系统字体缩放仍生效；关键操作均保留文字且使用 Material 最小触控区域。
+4. 空人物、空记录、空家族树、搜索无结果和空备份页面提供插画、解释及可执行下一步。
+5. 连接、搜索、媒体与安全页面的成功/错误信息使用统一状态卡；可重试错误提供明确“重试”按钮。
+6. PowerShell 运维脚本覆盖启动、数据库初始化、健康检查、创建备份、恢复备份和清除演示资料。
+7. 后端完整测试、Android 单元测试、Lint、Debug APK、Android 测试代码编译全部通过；APK 中不包含模型 API Key。

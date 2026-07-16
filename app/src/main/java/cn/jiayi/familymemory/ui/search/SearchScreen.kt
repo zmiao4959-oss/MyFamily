@@ -29,6 +29,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.jiayi.familymemory.data.local.PersonEntity
 import cn.jiayi.familymemory.data.search.SearchMode
+import cn.jiayi.familymemory.R
+import cn.jiayi.familymemory.ui.components.EmptyState
+import cn.jiayi.familymemory.ui.components.StatusBanner
 
 @Composable
 fun SearchScreen(
@@ -84,8 +87,12 @@ fun SearchScreen(
         }
         Button(onClick = { viewModel.search(query, personId, if (state.mode == SearchMode.TEXT) mediaType else null) }, enabled = query.isNotBlank() && !state.busy, modifier = Modifier.fillMaxWidth()) { Text("开始搜索") }
         if (state.busy) CircularProgressIndicator()
-        state.message?.let { Text(it, color = if (state.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) }
-        if (state.searched && state.results.isEmpty() && !state.busy) Text("没有找到相关资料。可以换个说法或检查索引状态。")
+        state.message?.let { StatusBanner(it, state.isError, onRetry = if (state.isError && query.isNotBlank()) ({ viewModel.search(query, personId, if (state.mode == SearchMode.TEXT) mediaType else null) }) else null) }
+        if (state.searched && state.results.isEmpty() && !state.busy) EmptyState(
+            image = R.drawable.empty_records,
+            title = "没有找到相关资料",
+            description = "可以换个说法、减少筛选条件，或检查搜索索引状态。",
+        )
         state.results.forEach { result ->
             Card(Modifier.fillMaxWidth().clickable {
                 result.recordId?.let(onOpenRecord) ?: result.personId?.let(onOpenPerson)

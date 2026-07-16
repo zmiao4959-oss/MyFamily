@@ -9,6 +9,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
@@ -47,6 +49,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.compose.ui.viewinterop.AndroidView
 import cn.jiayi.familymemory.data.local.MediaEntity
+import cn.jiayi.familymemory.R
+import cn.jiayi.familymemory.ui.components.StatusBanner
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +80,7 @@ fun MediaTestScreen(viewModel: MediaViewModel, onBack: () -> Unit) {
         return
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("第三阶段媒体测试") }, navigationIcon = { OutlinedButton(onClick = onBack) { Text("返回") } }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text("媒体与录音") }, navigationIcon = { OutlinedButton(onClick = onBack) { Text("返回") } }) }) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -84,7 +88,7 @@ fun MediaTestScreen(viewModel: MediaViewModel, onBack: () -> Unit) {
             Text("原始媒体优先", style = MaterialTheme.typography.headlineSmall)
             Text("文件先保存到 App 私有目录，网络可用后由后台任务分块上传；原图、原音频和原视频不会被缩略图或整理结果覆盖。")
             if (state.busy) CircularProgressIndicator()
-            state.message?.let { Text(it, color = if (state.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) }
+            state.message?.let { StatusBanner(it, state.isError) }
 
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -105,8 +109,14 @@ fun MediaTestScreen(viewModel: MediaViewModel, onBack: () -> Unit) {
             }
 
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("录音", style = MaterialTheme.typography.titleLarge)
+                Box {
+                    Image(
+                        painterResource(R.drawable.recording_interview_background), contentDescription = null,
+                        modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = .16f,
+                    )
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("口述采访与录音", style = MaterialTheme.typography.titleLarge)
+                    Text("原始录音会永久保留；系统识别失败也不影响保存。", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (!state.isRecording && state.draftPath == null) {
                         Button(
                             onClick = {
@@ -137,11 +147,12 @@ fun MediaTestScreen(viewModel: MediaViewModel, onBack: () -> Unit) {
                             onClick = viewModel::recognizeShortSpeech,
                             enabled = state.asrAvailable && !state.recognizing,
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text(if (state.asrAvailable) "重新短口述并使用系统识别" else "本机系统识别不可用，请手动填写") }
+                        ) { Text(asrButtonText(state.asrAvailable)) }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(onClick = viewModel::deleteDraft, modifier = Modifier.weight(1f)) { Text("删除未保存录音") }
                             Button(onClick = viewModel::saveDraft, modifier = Modifier.weight(1f)) { Text("保存为记录") }
                         }
+                    }
                     }
                 }
             }
@@ -187,6 +198,8 @@ private fun MediaRow(item: MediaEntity, onPreview: () -> Unit, onRetry: () -> Un
 private fun statusText(status: String) = when (status) {
     "pending" -> "等待上传（将自动重试）"; "uploading" -> "正在后台上传"; "uploaded" -> "已上传"; "failed" -> "上传失败"; else -> status
 }
+
+internal fun asrButtonText(available: Boolean) = if (available) "重新短口述并使用系统识别" else "本机系统识别不可用，请手动填写"
 
 @Composable
 private fun LocalImage(path: String) {

@@ -1,11 +1,13 @@
 package cn.jiayi.familymemory.ui.main
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -30,11 +32,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.jiayi.familymemory.data.local.PersonEntity
 import cn.jiayi.familymemory.data.local.RecordEntity
+import cn.jiayi.familymemory.R
 import cn.jiayi.familymemory.ui.ai.AiScreen
 import cn.jiayi.familymemory.ui.ai.AiViewModel
 import cn.jiayi.familymemory.ui.search.SearchScreen
@@ -165,6 +172,14 @@ private fun HomeScreen(
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("把家人的故事，安静地留在自己手中。", style = MaterialTheme.typography.headlineSmall)
+        if (state.persons.isEmpty() && state.records.isEmpty()) {
+            Image(
+                painterResource(R.drawable.welcome_family_album), contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(250.dp).clip(RoundedCornerShape(28.dp)),
+                contentScale = ContentScale.Crop,
+            )
+            Text("先添加本人，或写下第一段记忆。所有资料都会先保存在你自己的设备中。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
                 Text("家庭资料库", style = MaterialTheme.typography.titleLarge)
@@ -252,7 +267,7 @@ private fun SettingsScreen(
         OutlinedButton(onClick = onSecurity, modifier = Modifier.fillMaxWidth()) { Text("安全、备份与授权设备") }
         OutlinedButton(onClick = { confirmClear = true }, modifier = Modifier.fillMaxWidth()) { Text("清空手机本地资料") }
         Text("备份使用 AES-256 加密；App 锁使用系统指纹、面容或锁屏密码。当前版本不含广告、行为分析或云端账号。", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("家忆 0.7.0 · 第七阶段安全与备份", style = MaterialTheme.typography.labelLarge)
+        Text("家忆 0.8.0 · 第八阶段素材与打磨", style = MaterialTheme.typography.labelLarge)
     }
     if (confirmClear) AlertDialog(
         onDismissRequest = { confirmClear = false }, title = { Text("确认清空手机资料？") },

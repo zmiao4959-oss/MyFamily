@@ -1,6 +1,7 @@
 package cn.jiayi.familymemory.ui.security
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,10 +27,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cn.jiayi.familymemory.network.BackupDto
+import cn.jiayi.familymemory.R
+import cn.jiayi.familymemory.ui.components.EmptyState
+import cn.jiayi.familymemory.ui.components.StatusBanner
 
 @Composable
 fun SecurityScreen(
@@ -48,7 +55,13 @@ fun SecurityScreen(
         TextButton(onClick = onBack) { Text("← 返回设置") }
         Text("安全与备份", style = MaterialTheme.typography.headlineSmall)
         if (state.busy) CircularProgressIndicator()
-        state.message?.let { Text(it, color = if (state.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) }
+        state.message?.let { StatusBanner(it, state.isError, onRetry = if (state.isError) viewModel::refresh else null) }
+        if (state.message?.startsWith("加密备份已创建") == true) {
+            Image(
+                painterResource(R.drawable.backup_complete), contentDescription = null,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 56.dp), contentScale = ContentScale.Fit,
+            )
+        }
 
         Card(Modifier.fillMaxWidth()) {
             Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -62,7 +75,11 @@ fun SecurityScreen(
         OutlinedTextField(confirmation, { confirmation = it }, label = { Text("再次输入密码") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
         Button(onClick = { viewModel.createBackup(password, confirmation) }, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) { Text("创建加密备份") }
         Text("密码不会上传或保存，忘记后无法恢复备份。", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-        if (state.backups.isEmpty()) Text("还没有备份")
+        if (state.backups.isEmpty() && !state.busy) EmptyState(
+            image = R.drawable.backup_complete,
+            title = "还没有加密备份",
+            description = "创建后可导出到移动硬盘或你信任的位置。密码不会被保存。",
+        )
         state.backups.forEach { backup ->
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

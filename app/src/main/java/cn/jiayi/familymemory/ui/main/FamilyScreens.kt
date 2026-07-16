@@ -32,6 +32,9 @@ import cn.jiayi.familymemory.data.core.PersonInput
 import cn.jiayi.familymemory.data.local.PersonEntity
 import cn.jiayi.familymemory.data.local.RecordEntity
 import cn.jiayi.familymemory.data.local.RelationshipEntity
+import cn.jiayi.familymemory.R
+import cn.jiayi.familymemory.ui.components.EmptyState
+import cn.jiayi.familymemory.ui.components.PersonAvatar
 
 @Composable
 fun PeopleListScreen(
@@ -50,12 +53,19 @@ fun PeopleListScreen(
         }
         OutlinedTextField(query, { query = it }, label = { Text("搜索姓名或小名") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         if (filtered.isEmpty()) {
-            Text(if (persons.isEmpty()) "还没有人物，先添加第一位家人。" else "没有找到匹配的人物。", modifier = Modifier.padding(top = 28.dp))
+            EmptyState(
+                image = R.drawable.empty_people,
+                title = if (persons.isEmpty()) "从第一位家人开始" else "没有找到人物",
+                description = if (persons.isEmpty()) "可以先添加本人，再慢慢补充父母、伴侣和孩子。" else "请换一个姓名或小名重新搜索。",
+                actionLabel = if (persons.isEmpty()) "添加第一位家人" else null,
+                onAction = if (persons.isEmpty()) ({ adding = true }) else null,
+            )
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(filtered, key = { it.id }) { person ->
                     Card(Modifier.fillMaxWidth().clickable { onOpenPerson(person.id) }) {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            PersonAvatar(person, modifier = Modifier.padding(end = 14.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(person.name, style = MaterialTheme.typography.titleLarge)
                                 Text(personSummary(person), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -98,6 +108,7 @@ fun PersonDetailScreen(
         item {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PersonAvatar(person, size = 96.dp, modifier = Modifier.align(Alignment.CenterHorizontally))
                     Text(person.name, style = MaterialTheme.typography.headlineMedium)
                     if (person.nickname.isNotBlank()) Text("小名：${person.nickname}")
                     Text(personSummary(person))

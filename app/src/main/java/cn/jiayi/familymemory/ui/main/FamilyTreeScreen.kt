@@ -1,6 +1,7 @@
 package cn.jiayi.familymemory.ui.main
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -30,8 +31,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import cn.jiayi.familymemory.R
 import cn.jiayi.familymemory.data.local.PersonEntity
 import cn.jiayi.familymemory.data.local.RelationshipEntity
+import cn.jiayi.familymemory.ui.components.EmptyState
+import cn.jiayi.familymemory.ui.components.PersonAvatar
 import kotlin.math.roundToInt
 
 @Composable
@@ -60,7 +66,13 @@ fun FamilyTreeScreen(
             ) { Text("回到本人") }
         }
         if (persons.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(24.dp)) { Text("还没有人物，请先在人物列表中添加。") }
+            EmptyState(
+                image = R.drawable.empty_people,
+                title = "家族树还没有人物",
+                description = "先添加本人或一位家人，家族树就会从这里生长。",
+                actionLabel = "返回人物列表",
+                onAction = onShowList,
+            )
             return@Column
         }
         Box(
@@ -72,6 +84,10 @@ fun FamilyTreeScreen(
                     }
                 },
         ) {
+            Image(
+                painterResource(R.drawable.family_tree_background), contentDescription = null,
+                modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = .42f,
+            )
             Box(
                 Modifier.size(1400.dp, 1000.dp).graphicsLayer {
                     scaleX = scale; scaleY = scale; translationX = pan.x; translationY = pan.y
@@ -98,10 +114,13 @@ fun FamilyTreeScreen(
                         }.size(150.dp, 92.dp)
                             .clickable { centerId = person.id; onOpenPerson(person.id) },
                     ) {
-                        Column(Modifier.padding(12.dp)) {
-                            Text(person.name, style = MaterialTheme.typography.titleMedium)
-                            Text(yearRange(person), style = MaterialTheme.typography.bodyMedium)
-                            if (person.isSelf) Text("本人", color = MaterialTheme.colorScheme.primary)
+                        Row(Modifier.padding(9.dp)) {
+                            PersonAvatar(person, size = 42.dp, modifier = Modifier.padding(end = 8.dp))
+                            Column {
+                                Text(person.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                                Text(yearRange(person), style = MaterialTheme.typography.bodySmall)
+                                if (person.isSelf) Text("本人", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
                 }
