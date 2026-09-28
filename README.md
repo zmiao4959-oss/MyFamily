@@ -2,6 +2,13 @@
 
 “家忆”是面向个人和家庭的本地优先电子族谱与人生档案 App。项目目前完成第八阶段：完整闭环包含本地优先资料、媒体、AI 助手、多模态搜索、AES-256 加密备份、App 锁，并完成原创视觉素材、深色模式、适老化、空状态和错误状态打磨。
 
+<img width="1080" height="2376" alt="Screenshot_20260928_154028" src="https://github.com/user-attachments/assets/09c64a33-08e5-4d72-a609-6aba5753965e" />
+<img width="1080" height="2376" alt="Screenshot_20260928_154022" src="https://github.com/user-attachments/assets/3c07315e-07b4-4ce9-ae53-e5bace71887f" />
+<img width="1080" height="2376" alt="Screenshot_20260928_153726" src="https://github.com/user-attachments/assets/d8ed4bb8-ee96-436b-94e6-0829d57d2636" />
+<img width="1080" height="2376" alt="Screenshot_20260928_154034" src="https://github.com/user-attachments/assets/253ad757-ead7-4bb3-919c-80330cc653ac" />
+<img width="1080" height="2376" alt="Screenshot_20260928_153938" src="https://github.com/user-attachments/assets/4f5d629c-d6d9-4ce0-a348-2285f5a5efe9" />
+
+
 > AI 与多模态搜索默认关闭；没有任何模型 Key 时，基础功能、加密备份、App 锁和关键词搜索仍可完整使用。
 
 ## 目录
